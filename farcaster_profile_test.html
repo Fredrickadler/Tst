@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Farcaster Mini App - Profile Test</title>
+  <style>
+    body {
+      background: #0f0f0f;
+      color: white;
+      font-family: sans-serif;
+      text-align: center;
+      padding: 40px;
+    }
+    img {
+      border-radius: 50%;
+      width: 100px;
+      height: 100px;
+      object-fit: cover;
+      margin-bottom: 10px;
+    }
+    .username {
+      font-size: 24px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <h1>Test Profile</h1>
+  <img id="avatar" src="" alt="Profile Picture" />
+  <div class="username" id="username">@username</div>
+
+  <script type="module">
+    const apiKey = "D8460DB2-32C8-45E0-8C56-0ACB0FE02C29";
+
+    async function loadProfile(fid) {
+      const res = await fetch("https://api.neynar.com/v2/farcaster/user/bulk", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "api_key": apiKey
+        },
+        body: JSON.stringify({ fids: [fid] })
+      });
+
+      const data = await res.json();
+      const profile = data.users?.[0];
+      if (profile) {
+        document.getElementById("avatar").src = profile.pfp_url;
+        document.getElementById("username").textContent = "@" + profile.username;
+      } else {
+        document.getElementById("username").textContent = "Profile not found";
+      }
+    }
+
+    loadProfile(5650);
+  </script>
+</body>
+</html>
