@@ -2,14 +2,14 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Mini App Test</title>
+  <title>Mini App - Farcaster Profile</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 </head>
-<body style="font-family:sans-serif; padding:20px; text-align:center">
-  <h2>Farcaster User</h2>
-  <div id="loading">Loading user...</div>
-  <img id="profile-avatar" width="100" style="border-radius: 50%; display: none" />
-  <div id="profile-username" style="margin-top: 10px; font-weight: bold"></div>
+<body style="font-family:sans-serif; text-align:center; padding:20px; background:#111; color:#fff">
+  <h2>Farcaster User Info</h2>
+  <div id="loading">Loading user profile...</div>
+  <img id="profile-avatar" width="100" style="border-radius: 50%; display: none; margin-top:10px;" />
+  <div id="profile-username" style="margin-top: 10px; font-weight: bold; font-size:18px;"></div>
 
   <script type="module">
     import sdk from "https://esm.sh/@farcaster/frame-sdk";
@@ -19,20 +19,26 @@
     async function loadUserProfile() {
       try {
         const context = await sdk.context;
-        console.log("Context:", context);
         const user = context?.user;
-        if (!user?.fid) {
-          document.getElementById("loading").innerText = "No user context found.";
+
+        console.log("Context:", context);
+
+        if (!user || !user.fid) {
+          document.getElementById("loading").textContent = "No Farcaster user found.";
           return;
         }
 
+        const fid = user.fid;
+        const fallbackUsername = user.username || null;
+
+        // Try fetching Neynar profile
         const res = await fetch("https://api.neynar.com/v2/farcaster/user/bulk", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "api_key": apiKey
+            "api_key": apiKey,
           },
-          body: JSON.stringify({ fids: [user.fid] })
+          body: JSON.stringify({ fids: [fid] }),
         });
 
         const data = await res.json();
@@ -41,14 +47,20 @@
         if (profile) {
           document.getElementById("profile-avatar").src = profile.pfp_url;
           document.getElementById("profile-avatar").style.display = "block";
-          document.getElementById("profile-username").innerText = "@" + profile.username;
-          document.getElementById("loading").style.display = "none";
+          document.getElementById("profile-username").textContent = `@${profile.username}`;
         } else {
-          document.getElementById("loading").innerText = "User not found";
+          document.getElementById("profile-avatar").src = "https://i.imgur.com/UH3IPXw.png";
+          document.getElementById("profile-avatar").style.display = "block";
+          document.getElementById("profile-username").textContent = fallbackUsername
+            ? `@${fallbackUsername} (no Neynar)`
+            : `fid: ${fid}`;
         }
-      } catch (e) {
-        console.error("Load failed", e);
-        document.getElementById("loading").innerText = "Error loading profile";
+
+        document.getElementById("loading").style.display = "none";
+
+      } catch (error) {
+        console.error("Profile load failed:", error);
+        document.getElementById("loading").textContent = "Failed to load profile.";
       }
     }
 
@@ -57,7 +69,7 @@
         await sdk.actions.ready();
         loadUserProfile();
       } catch (e) {
-        document.getElementById("loading").innerText = "SDK Init failed";
+        document.getElementById("loading").textContent = "Initialization failed (not in Warpcast?)";
       }
     });
   </script>
