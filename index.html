@@ -1,58 +1,65 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Farcaster Mini App - Profile: @v</title>
-  <style>
-    body {
-      background: #0f0f0f;
-      color: white;
-      font-family: sans-serif;
-      text-align: center;
-      padding: 40px;
-    }
-    img {
-      border-radius: 50%;
-      width: 100px;
-      height: 100px;
-      object-fit: cover;
-      margin-bottom: 10px;
-    }
-    .username {
-      font-size: 24px;
-      font-weight: bold;
-    }
-  </style>
+  <meta charset="UTF-8" />
+  <title>Mini App Test</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 </head>
-<body>
-  <h1>Demo Profile: @v</h1>
-  <img id="avatar" src="" alt="Profile Picture" />
-  <div class="username" id="username">@username</div>
+<body style="font-family:sans-serif; padding:20px; text-align:center">
+  <h2>Farcaster User</h2>
+  <div id="loading">Loading user...</div>
+  <img id="profile-avatar" width="100" style="border-radius: 50%; display: none" />
+  <div id="profile-username" style="margin-top: 10px; font-weight: bold"></div>
 
   <script type="module">
+    import sdk from "https://esm.sh/@farcaster/frame-sdk";
+
     const apiKey = "D8460DB2-32C8-45E0-8C56-0ACB0FE02C29";
 
-    async function loadProfile(fid) {
-      const res = await fetch("https://api.neynar.com/v2/farcaster/user/bulk", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "api_key": apiKey
-        },
-        body: JSON.stringify({ fids: [fid] })
-      });
+    async function loadUserProfile() {
+      try {
+        const context = await sdk.context;
+        console.log("Context:", context);
+        const user = context?.user;
+        if (!user?.fid) {
+          document.getElementById("loading").innerText = "No user context found.";
+          return;
+        }
 
-      const data = await res.json();
-      const profile = data.users?.[0];
-      if (profile) {
-        document.getElementById("avatar").src = profile.pfp_url;
-        document.getElementById("username").textContent = "@" + profile.username;
-      } else {
-        document.getElementById("username").textContent = "Profile not found";
+        const res = await fetch("https://api.neynar.com/v2/farcaster/user/bulk", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "api_key": apiKey
+          },
+          body: JSON.stringify({ fids: [user.fid] })
+        });
+
+        const data = await res.json();
+        const profile = data.users?.[0];
+
+        if (profile) {
+          document.getElementById("profile-avatar").src = profile.pfp_url;
+          document.getElementById("profile-avatar").style.display = "block";
+          document.getElementById("profile-username").innerText = "@" + profile.username;
+          document.getElementById("loading").style.display = "none";
+        } else {
+          document.getElementById("loading").innerText = "User not found";
+        }
+      } catch (e) {
+        console.error("Load failed", e);
+        document.getElementById("loading").innerText = "Error loading profile";
       }
     }
 
-    loadProfile(2); // FID 2 = @v
+    document.addEventListener("DOMContentLoaded", async () => {
+      try {
+        await sdk.actions.ready();
+        loadUserProfile();
+      } catch (e) {
+        document.getElementById("loading").innerText = "SDK Init failed";
+      }
+    });
   </script>
 </body>
 </html>
